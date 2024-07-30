@@ -57,7 +57,51 @@ def user(session):
 @pytest.fixture()
 def token(client, user):
     response = client.post(
-        '/token',
-        data={'username': user.email, 'password': user.clean_password},
+        "/auth/token",
+        data={"username": user.email, "password": user.clean_password},
     )
-    return response.json()['access_token']
+    return response.json()["access_token"]
+
+
+@pytest.fixture()
+def token_admin(client, user_admin):
+    response = client.post(
+        "/auth/token",
+        data={"username": user_admin.email, "password": user_admin.clean_password},
+    )
+    return response.json()["access_token"]
+
+
+@pytest.fixture()
+def user_1(session):
+    pwd = "senha_super_senha"
+    user = User(
+        username="Teste1",
+        email="teste1@test.com",
+        password=get_password_hash(pwd),
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    user.clean_password = pwd
+
+    return user
+
+
+@pytest.fixture()
+def user_admin(session):
+    pwd = "senha_super_senha"
+    user = User(
+        username="Admin",
+        email="Admin@test.com",
+        password=get_password_hash(pwd),
+        is_admin=True,
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    user.clean_password = pwd
+
+    return user

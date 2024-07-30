@@ -2,17 +2,17 @@ from http import HTTPStatus
 
 from jwt import decode
 
-from fast_zero.security import SECRET_KEY, create_access_token
+from fast_zero.security import create_access_token, settings
 
 
 def test_jwt():
     data = {"test": "test"}
     token = create_access_token(data)
 
-    result = decode(token, SECRET_KEY, algorithms=["HS256"])
+    decoded = decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 
-    assert result["test"] == data["test"]
-    assert result["exp"]
+    assert decoded["test"] == data["test"]
+    assert decoded["exp"]
 
 
 def test_jwt_invalid_token(client):
