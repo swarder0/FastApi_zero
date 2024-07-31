@@ -1,4 +1,3 @@
-from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from fast_zero.database import get_session
+from fast_zero.exception import UserBadRequest
 from fast_zero.models import User
 from fast_zero.schemas import Token
 from fast_zero.security import create_access_token, verify_password
@@ -21,20 +21,14 @@ def login_for_access_token(
     session: T_Session,
     form_data: T_Oauth2Form,
 ):
-    user = session.scalar(select(User).where(User.email == form_data.username))
+    try:
+        user = session.scalar(select(User).where(User.email == form_data.username))
 
-    if not user:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail="Incorrect email or password",
-        )
+        if not user or not verify_password(form_data.password, user.password):
+            raise UserBadRequest("Incorrect email or password")
 
-    if not verify_password(form_data.password, user.password):
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail="Incorrect email or password",
-        )
+        access_token = create_access_token(data={"sub": user.email})
 
-    access_token = create_access_token(data={"sub": user.email})
-
-    return {"access_token": access_token, "token_type": "bearer"}
+        return {"access_token": access_token, "token_type": "bearer"}
+    except UserBadRequest as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)

@@ -21,33 +21,30 @@ T_CurrentUser = Annotated[User, Depends(get_current_user)]
 def create_user(
     user: UserSchema,
     session: T_Session,
-    current_user: T_CurrentUser,
 ):
-    db_user = session.scalar(
-        select(User).where(
-            (User.username == user.username) | (User.email == user.email)
+    try:
+        db_user = session.scalar(
+            select(User).where(
+                (User.username == user.username) | (User.email == user.email)
+            )
         )
-    )
 
-    if db_user:
-        if db_user.username == user.username:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST,
-                detail="Username already exists",
-            )
-        elif db_user.email == user.email:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST,
-                detail="Email already exists",
-            )
+        if db_user:
+            if db_user.username == user.username:
+                raise UserBadRequest("Username already exists")
+            elif db_user.email == user.email:
+                raise UserBadRequest("Email already exists")
 
-    db_user = User(username=user.username, password=user.password, email=user.email)
+        db_user = User(username=user.username, password=user.password, email=user.email)
 
-    session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
+        session.add(db_user)
+        session.commit()
+        session.refresh(db_user)
 
-    return db_user
+        return db_user
+
+    except UserBadRequest as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
 @router.get("/", response_model=UserList)

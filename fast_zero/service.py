@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from fast_zero.exception import UserBadRequest, UserDontHavePermission, UserNotFound
+from fast_zero.exception import UserDontHavePermission, UserNotFound
 from fast_zero.models import User
 
 
@@ -13,6 +13,7 @@ class UserService:
         user = self.session.scalar(select(User).where(User.id == user_id))
         if user is None:
             raise UserNotFound()
+
         return user
 
     def create_user(self, username, email):
@@ -22,11 +23,7 @@ class UserService:
         return user
 
     def update_user(self, user_id, user_data):
-        if not user_data.username or not user_data.email:
-            raise UserBadRequest()
         user = self.get_user(user_id)
-        if not user:
-            raise UserNotFound()
 
         if not self.has_permission(user_id):
             raise UserDontHavePermission()

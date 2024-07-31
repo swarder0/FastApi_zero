@@ -16,7 +16,7 @@ class UserDontHavePermission(Exception):
 
 
 class UserBadRequest(Exception):
-    def __init__(self):
-        self.message = "Bad request"
+    def __init__(self, message="Bad request"):
+        self.message = message
         self.status_code = HTTPStatus.BAD_REQUEST
         super().__init__(self.message)

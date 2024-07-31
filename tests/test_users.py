@@ -53,20 +53,35 @@ def test_update_user(client, user, token):
         "email": "testupdate@test.com",
         "id": 1,
     }
+    assert response.status_code == HTTPStatus.OK
 
 
-def test_updade_user_not_found(client):
+def test_updade_user_not_found(client, token):
     response = client.put(
         "/users/999",
+        headers={"Authorization": f"Bearer {token}"},
         json={
             "password": "123",
             "username": "test2",
             "email": "test@test.com",
-            "id": 1,
         },
     )
-    assert response.status_code == HTTPStatus.UNAUTHORIZED
-    assert response.json() == {"detail": "Not authenticated"}
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "User not found"}
+
+
+def test_update_user_wrong_user(client, user_1, token):
+    response = client.put(
+        f"/users/{user_1.id}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "password": "123",
+            "username": "wrongtest",
+            "email": "testwrong@test.com",
+        },
+    )
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.json() == {"detail": "Not enough permissions"}
 
 
 def test_delete_user(client, user, token):
@@ -108,9 +123,9 @@ def test_get_a_user(client, user, token):
     )
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
-        "username": "Teste",
-        "email": "teste@test.com",
-        "id": 1,
+        "username": user.username,
+        "email": user.email,
+        "id": user.id,
     }
 
 
@@ -119,9 +134,9 @@ def test_post_user_with_same_email(client, user, token):
         "/users/",
         headers={"Authorization": f"Bearer {token}"},
         json={
-            "password": "senha_super_senha",
+            "password": user.clean_password,
             "username": "teste2",
-            "email": "teste@test.com",
+            "email": user.email,
         },
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
@@ -134,7 +149,7 @@ def test_post_user_with_same_username(client, user, token):
         headers={"Authorization": f"Bearer {token}"},
         json={
             "password": "senha_super_senha",
-            "username": "Teste",
+            "username": user.username,
             "email": "testename2@example.com",
         },
     )
